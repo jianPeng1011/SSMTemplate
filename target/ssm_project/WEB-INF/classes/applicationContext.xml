@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <!--扫描配置文件-->
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <!--扫描注解-->
+    <context:component-scan base-package="com.xynlxy.sys.service.impl"/>
+    <context:component-scan base-package="com.xynlxy.bus.service.impl"/>
+    <!--配置数据源-->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="driverClass" value="${jdbc.driver}"></property>
+        <property name="jdbcUrl" value="${jdbc.url}"></property>
+        <property name="user" value="${jdbc.username}"></property>
+        <property name="password" value="${jdbc.password}"></property>
+        <property name="maxPoolSize" value="${c3p0.maxPoolSize}"></property>
+        <property name="minPoolSize" value="${c3p0.minPoolSize}"></property>
+        <property name="autoCommitOnClose" value="${c3p0.autoCommitOnClose}"></property>
+        <property name="checkoutTimeout" value="${c3p0.checkoutTimeout}"></property>
+        <property name="acquireRetryAttempts" value="${c3p0.acquireRetryAttempts}"></property>
+    </bean>
+    <!--配置sqlSessionFactory对象 mybatis继承spring-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!--注入数据库连接池-->
+        <property name="dataSource" ref="dataSource"></property>
+        <!--扫描pojo包 使用别名-->
+        <property name="typeAliasesPackage" value="com.xynlxy.sys.pojo,com.xynlxy.bus.pojo"></property>
+        <!--加载映射文件-->
+        <!--扫描配置文件：mapper需要的xml文件-->
+        <property name="mapperLocations">
+            <!--加载的是路径-->
+            <list>
+                <value>classpath:com/xynlxy/bus/mapper/*.xml</value>
+                <value>classpath:com/xynlxy/sys/mapper/*.xml</value>
+            </list>
+        </property>
+    </bean>
+    <!--扫描mapper接口包，动态实现接口，注入到spring容器中-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!--注入sqlSessionFactory-->
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+        <property name="basePackage" value="com.xynlxy.bus.mapper,com.xynlxy.sys.mapper"></property>
+    </bean>
+    <!--配置事务管理器-->
+    <bean name="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--注入数据库连接池-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+    <!--声明式事务-->
+    <tx:advice id="txAdvice" transaction-manager="txManager">
+        <tx:attributes>
+            <tx:method name="ins*"/>
+            <tx:method name="upd*"/>
+            <tx:method name="del*"/>
+            <tx:method name="*" read-only="true"/>
+        </tx:attributes>
+    </tx:advice>
+    <!--配置Aop-->
+    <aop:config>
+        <aop:pointcut id="mypoint1" expression="execution(* com.xynlxy.sys.service.impl.*.*(..))"></aop:pointcut>
+        <aop:pointcut id="mypoint2" expression="execution(* com.xynlxy.bus.service.impl.*.*(..))"></aop:pointcut>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="mypoint1"></aop:advisor>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="mypoint2"></aop:advisor>
+    </aop:config>
+</beans>
+
+
+
+
+
+
+
+
+
+
+
+
